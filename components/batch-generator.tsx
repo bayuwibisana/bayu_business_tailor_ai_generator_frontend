@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -40,6 +41,8 @@ export function BatchGenerator({ campaign }: { campaign: Campaign }) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [batchResult, setBatchResult] = useState<any>(null)
   const [currentJobId, setCurrentJobId] = useState<string | null>(null)
+  const router = useRouter()
+  const resultsRef = useRef<HTMLDivElement>(null)
 
   const addPost = () => {
     setPosts([...posts, {
@@ -62,6 +65,12 @@ export function BatchGenerator({ campaign }: { campaign: Campaign }) {
     setPosts(posts.map(p => p.id === id ? { ...p, [field]: value } : p))
   }
 
+  const scrollToBottom = () => {
+    if (resultsRef.current) {
+      resultsRef.current.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
   const startGeneration = async () => {
     // Validation
     const invalidPosts = posts.filter(p => !p.title.trim() || !p.brief.trim())
@@ -74,6 +83,9 @@ export function BatchGenerator({ campaign }: { campaign: Campaign }) {
     setBatchResult(null)
     // Show progress tracker immediately
     setCurrentJobId('initializing')
+    
+    // Scroll to bottom after a short delay to ensure progress tracker is rendered
+    setTimeout(scrollToBottom, 100)
 
     try {
       const batchData = {
@@ -154,7 +166,6 @@ export function BatchGenerator({ campaign }: { campaign: Campaign }) {
   const handleGenerationComplete = () => {
     setIsGenerating(false)
     setCurrentJobId(null)
-    console.log('Batch generation completed')
   }
 
   const addMultiplePosts = (count: number) => {
@@ -208,14 +219,7 @@ export function BatchGenerator({ campaign }: { campaign: Campaign }) {
         </CardContent>
       </Card>
 
-      {/* Progress Tracker - Show when job is running */}
-      {console.log('currentJobId adalah', currentJobId)}
-      {currentJobId && (
-        <ProgressTracker 
-          jobId={currentJobId} 
-          onComplete={handleGenerationComplete}
-        />
-      )}
+
 
       {/* Posts Input */}
       <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -301,6 +305,14 @@ export function BatchGenerator({ campaign }: { campaign: Campaign }) {
         </Button>
       </div>
 
+      {/* Progress Tracker - Show when job is running */}
+      {currentJobId && (
+        <ProgressTracker 
+          jobId={currentJobId} 
+          onComplete={handleGenerationComplete}
+        />
+      )}
+
       {/* Results */}
       {batchResult && (
         <Card>
@@ -337,6 +349,9 @@ export function BatchGenerator({ campaign }: { campaign: Campaign }) {
           </CardContent>
         </Card>
       )}
+
+      {/* Scroll target for auto-scroll */}
+      <div ref={resultsRef} />
     </div>
   )
 }

@@ -57,6 +57,10 @@ class ApiClient {
     return this.client.post('/campaigns', data)
   }
 
+  async getCampaignPosts(campaignId: string) {
+    return this.client.get(`/campaigns/${campaignId}/posts`)
+  }
+
   // CORE: Batch Generation
   async startBatchGeneration(campaignId: string, data: any) {
     return this.client.post(`/campaigns/${campaignId}/generate-batch`, data)
