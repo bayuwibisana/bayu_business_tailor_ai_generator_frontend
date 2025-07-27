@@ -69,7 +69,9 @@ export function ProgressTracker({ jobId, onComplete }: ProgressTrackerProps) {
         setPollCount(prev => prev + 1)
 
         // Check for completion
-        if (batchStatus.status === 'completed' || batchStatus.status === 'failed') {
+        if (batchStatus.status === 'completed' || 
+            batchStatus.status === 'completed_with_errors' || 
+            batchStatus.status === 'failed') {
           console.log('Job completed with status:', batchStatus.status)
           setIsPolling(false)
           onComplete?.()
