@@ -72,7 +72,8 @@ export function BatchGenerator({ campaign }: { campaign: Campaign }) {
 
     setIsGenerating(true)
     setBatchResult(null)
-    setCurrentJobId(null)
+    // Show progress tracker immediately
+    setCurrentJobId('initializing')
 
     try {
       const batchData = {
@@ -98,18 +99,40 @@ export function BatchGenerator({ campaign }: { campaign: Campaign }) {
       
       const startTime = Date.now()
 
-      const response = await apiClient.startBatchGeneration(campaign.id, batchData)
+      // Start batch generation without waiting (non-blocking)
+      const batchPromise = apiClient.startBatchGeneration(campaign.id, batchData)
       
-      // Try different possible job ID fields
-      const jobId = response.data.batch_job.id
+      // Start polling for processing batches immediately
+      let jobId: string | null = null
+      let pollInterval: NodeJS.Timeout | null = null
       
-      if (jobId) {
-        setCurrentJobId(jobId)
-      } else {
-        console.warn('No job ID found in response:', Object.keys(response.data))
-        // Still show progress tracker even without job ID for user feedback
-        setCurrentJobId('unknown')
-      }
+      pollInterval = setInterval(async () => {
+        try {
+          console.log('Polling for processing batches...')
+          const processingBatchesResponse = await apiClient.getProcessingBatches(campaign.id)
+          console.log('Processing batches response:', processingBatchesResponse.data)
+          
+          const processingBatches = processingBatchesResponse.data || []
+          const latestProcessingBatch = processingBatches[0]
+          
+          if (latestProcessingBatch && latestProcessingBatch.id) {
+            jobId = latestProcessingBatch.id
+            console.log('Found processing batch with job ID:', jobId)
+            setCurrentJobId(jobId)
+            
+            // Clear polling interval once we have the job ID
+            if (pollInterval) {
+              clearInterval(pollInterval)
+            }
+          }
+        } catch (error) {
+          console.log('No processing batches found yet, continuing to poll...')
+        }
+      }, 2000) // Poll every 2 seconds
+
+      // Wait for batch generation to complete in background
+      const response = await batchPromise
+      console.log('Batch generation started:', response.data)
 
       const endTime = Date.now()
       const duration = (endTime - startTime) / 1000
@@ -186,6 +209,7 @@ export function BatchGenerator({ campaign }: { campaign: Campaign }) {
       </Card>
 
       {/* Progress Tracker - Show when job is running */}
+      {console.log('currentJobId adalah', currentJobId)}
       {currentJobId && (
         <ProgressTracker 
           jobId={currentJobId} 

@@ -62,6 +62,10 @@ class ApiClient {
     return this.client.post(`/campaigns/${campaignId}/generate-batch`, data)
   }
 
+  async getProcessingBatches(campaignId: string) {
+    return this.client.get(`/campaigns/${campaignId}/batches?status=processing`)
+  }
+
   async getBatchStatus(jobId: string) {
     return this.client.get(`/batch-jobs/${jobId}/status`)
   }
